@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Issue Tracker</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f9;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      max-width: 400px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 10px;
+      background: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #issueList {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Issue Tracker</h1>
+
+<div class="card">
+  <h3>Enter Username</h3>
+  <input id="username" placeholder="Username">
+</div>
+
+<div class="card">
+  <h3>Report Issue</h3>
+  <input id="title" placeholder="Issue title">
+  <button onclick="submitIssue()">Submit</button>
+</div>
+
+<div class="card">
+  <h3>Update Status</h3>
+  <input id="issueId" placeholder="Issue ID">
+  <input id="status" placeholder="pending/resolved">
+  <button onclick="updateStatus()">Update</button>
+</div>
+
+<div class="card">
+  <h3>Your Issues</h3>
+  <button onclick="loadUserIssues()">Load Issues</button>
+  <div id="issueList"></div>
+</div>
+
+<script>
+const API = "http://localhost:3001";
+
+// Create Issue
+async function submitIssue() {
+  const title = document.getElementById("title").value;
+  const username = document.getElementById("username").value;
+
+  const res = await fetch(API + "/issue", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ title, username })
+  });
+
+  const data = await res.json();
+  alert("Issue Created ID: " + data.id);
+}
+
+// Update Status
+async function updateStatus() {
+  const id = document.getElementById("issueId").value;
+  const status = document.getElementById("status").value;
+
+  const res = await fetch(API + `/issue/${id}/status`, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ status })
+  });
+
+  const data = await res.json();
+  alert(data.message || data.error);
+}
+
+// Load Issues
+async function loadUserIssues() {
+  const username = document.getElementById("username").value;
+
+  const res = await fetch(API + `/user/${username}/issues`);
+  const data = await res.json();
+
+  let html = "";
+  data.forEach(i => {
+    html += `<p>ID: ${i.id} | ${i.title} | ${i.status}</p>`;
+  });
+
+  document.getElementById("issueList").innerHTML = html;
+}
+</script>
+
+</body>
+</html>
