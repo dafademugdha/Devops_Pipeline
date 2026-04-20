@@ -2,7 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]  # Changed from "main" to "master"
+  pull_request:
+    branches: [ "master" ]  # Added this so it runs on PRs too
 
 jobs:
   build:
@@ -10,10 +12,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4 # Updated to v4 for better performance
 
     - name: Setup Node
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4 # Updated to v4
       with:
         node-version: '18'
 
