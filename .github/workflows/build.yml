@@ -20,6 +20,10 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
-          context: .  # Changed from ./backend to . to match your VS Code structure
+          # This tells Docker to use the 'backend' folder as the home for the build
+          context: ./backend
+          # This points directly to the Dockerfile inside that folder
+          file: ./backend/Dockerfile
           push: true
+          # Replace 'devops-project' with whatever name you want on Docker Hub
           tags: ${{ secrets.DOCKER_USERNAME }}/devops-project:latest
