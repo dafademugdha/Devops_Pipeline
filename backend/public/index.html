@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Issue Tracker</title>
+  <title>Issue Tracker | DevOps Dashboard</title>
 
   <style>
     body {
-      font-family: Arial;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f4f6f9;
       padding: 20px;
+      margin-bottom: 60px; /* Space for the pulse bar */
     }
+
+    h1 { color: #2c3e50; }
 
     .card {
       background: white;
@@ -23,18 +26,61 @@
       width: 90%;
       padding: 10px;
       margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
     }
 
     button {
-      padding: 10px;
+      padding: 10px 15px;
       background: #3498db;
       color: white;
       border: none;
+      border-radius: 5px;
       cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #2980b9;
     }
 
     #issueList {
       margin-top: 20px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+
+    /* --- Visual Pulse Styles --- */
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #2c3e50;
+      color: white;
+      padding: 8px 20px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      box-sizing: border-box;
+      z-index: 1000;
+      border-top: 2px solid #34495e;
+    }
+
+    .dot {
+      height: 10px;
+      width: 10px;
+      background-color: #2ecc71;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+      box-shadow: 0 0 8px #2ecc71;
+    }
+
+    .env-tag {
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
   </style>
 </head>
@@ -51,14 +97,14 @@
 <div class="card">
   <h3>Report Issue</h3>
   <input id="title" placeholder="Issue title">
-  <button onclick="submitIssue()">Submit</button>
+  <button onclick="submitIssue()">Submit Issue</button>
 </div>
 
 <div class="card">
   <h3>Update Status</h3>
   <input id="issueId" placeholder="Issue ID">
   <input id="status" placeholder="pending/resolved">
-  <button onclick="updateStatus()">Update</button>
+  <button onclick="updateStatus()">Update Status</button>
 </div>
 
 <div class="card">
@@ -67,53 +113,104 @@
   <div id="issueList"></div>
 </div>
 
+<div class="status-bar">
+  <div>
+    <span id="status-dot" class="dot"></span>
+    SYSTEM STATUS: <span id="env-mode" class="env-tag">Checking...</span>
+  </div>
+  <div>LAST PING: <span id="last-ping">--:--:--</span></div>
+</div>
+
 <script>
+// Use window.location.origin so it works locally AND on Render automatically
 const API = window.location.origin;
 
-// Create Issue
+// 1. Create Issue
 async function submitIssue() {
   const title = document.getElementById("title").value;
   const username = document.getElementById("username").value;
 
-  const res = await fetch(API + "/issue", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ title, username })
-  });
+  if(!title || !username) return alert("Please fill in all fields");
 
-  const data = await res.json();
-  alert("Issue Created ID: " + data.id);
+  try {
+    const res = await fetch(API + "/issue", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ title, username })
+    });
+    const data = await res.json();
+    alert("Issue Created ID: " + data.id);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to create issue. Check console.");
+  }
 }
 
-// Update Status
+// 2. Update Status
 async function updateStatus() {
   const id = document.getElementById("issueId").value;
   const status = document.getElementById("status").value;
 
-  const res = await fetch(API + `/issue/${id}/status`, {
-    method: "PUT",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ status })
-  });
-
-  const data = await res.json();
-  alert(data.message || data.error);
+  try {
+    const res = await fetch(API + `/issue/${id}/status`, {
+      method: "PUT",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ status })
+    });
+    const data = await res.json();
+    alert(data.message || data.error);
+  } catch (err) {
+    alert("Update failed.");
+  }
 }
 
-// Load Issues
+// 3. Load Issues
 async function loadUserIssues() {
   const username = document.getElementById("username").value;
+  if(!username) return alert("Enter a username first");
 
-  const res = await fetch(API + `/user/${username}/issues`);
-  const data = await res.json();
+  try {
+    const res = await fetch(API + `/user/${username}/issues`);
+    const data = await res.json();
 
-  let html = "";
-  data.forEach(i => {
-    html += `<p>ID: ${i.id} | ${i.title} | ${i.status}</p>`;
-  });
+    let html = "";
+    if(data.length === 0) html = "<p>No issues found for this user.</p>";
+    data.forEach(i => {
+      html += `<p style="font-size:14px; border-bottom:1px solid #eee; padding:5px 0;">
+                <strong>ID:</strong> ${i.id} | <strong>Title:</strong> ${i.title} | 
+                <span style="color:${i.status === 'resolved' ? 'green' : 'orange'}">${i.status.toUpperCase()}</span>
+               </p>`;
+    });
 
-  document.getElementById("issueList").innerHTML = html;
+    document.getElementById("issueList").innerHTML = html;
+    updatePulse(); // Update timestamp when data is loaded
+  } catch (err) {
+    alert("Could not load issues.");
+  }
 }
+
+// 4. Visual Pulse Logic
+function updatePulse() {
+  const envDisplay = document.getElementById("env-mode");
+  const pingDisplay = document.getElementById("last-ping");
+  const dot = document.getElementById("status-dot");
+  
+  const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  
+  envDisplay.innerText = isLocal ? "Local Development" : "Production (Render)";
+  envDisplay.style.color = isLocal ? "#f1c40f" : "#2ecc71";
+  dot.style.backgroundColor = isLocal ? "#f1c40f" : "#2ecc71";
+  dot.style.boxShadow = isLocal ? "0 0 8px #f1c40f" : "0 0 8px #2ecc71";
+
+  const now = new Date();
+  pingDisplay.innerText = now.toLocaleTimeString();
+}
+
+// Initial run
+updatePulse();
+// Auto-ping every 30 seconds to show the app is "alive"
+setInterval(updatePulse, 30000);
+
 </script>
 
 </body>
