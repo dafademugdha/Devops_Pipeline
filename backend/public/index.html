@@ -1,217 +1,253 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Issue Tracker | DevOps Dashboard</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevOps Issue Tracker</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f6f9;
-      padding: 20px;
-      margin-bottom: 60px; /* Space for the pulse bar */
+    :root {
+      --primary: #3498db;
+      --success: #2ecc71;
+      --warning: #f1c40f;
+      --dark: #2c3e50;
+      --light: #f4f6f9;
     }
 
-    h1 { color: #2c3e50; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--light);
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 60px;
+    }
+
+    .container { width: 100%; max-width: 500px; }
 
     .card {
       background: white;
-      padding: 20px;
-      border-radius: 10px;
+      padding: 25px;
+      border-radius: 12px;
       margin-bottom: 20px;
-      max-width: 400px;
-      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      border-left: 5px solid var(--primary);
     }
+
+    h1 { color: var(--dark); margin-bottom: 30px; }
+    h3 { margin-top: 0; color: var(--dark); font-size: 1.1rem; }
 
     input {
-      width: 90%;
-      padding: 10px;
+      width: 100%;
+      padding: 12px;
       margin: 10px 0;
       border: 1px solid #ddd;
-      border-radius: 5px;
+      border-radius: 8px;
+      box-sizing: border-box;
+      outline: none;
     }
+
+    input:focus { border-color: var(--primary); }
 
     button {
-      padding: 10px 15px;
-      background: #3498db;
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background 0.3s;
+      font-weight: bold;
+      transition: transform 0.1s, background 0.2s;
     }
 
-    button:hover {
-      background: #2980b9;
+    button:hover { background: #2980b9; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    /* Issue Ticket Styling */
+    .issue-ticket {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    #issueList {
-      margin-top: 20px;
-      border-top: 1px solid #eee;
-      padding-top: 10px;
+    .status-pill {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
     }
 
-    /* --- Visual Pulse Styles --- */
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-resolved { background: #d4edda; color: #155724; }
+
+    /* Toast Notification */
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      background-color: var(--dark);
+      color: #fff;
+      text-align: center;
+      border-radius: 8px;
+      padding: 16px;
+      position: fixed;
+      z-index: 1001;
+      bottom: 80px;
+      font-size: 14px;
+    }
+
+    #toast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+
+    @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 80px; opacity: 1;} }
+    @keyframes fadeout { from {bottom: 80px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+
+    /* Visual Pulse Bar */
     .status-bar {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
-      background: #2c3e50;
+      background: var(--dark);
       color: white;
-      padding: 8px 20px;
-      font-size: 13px;
+      padding: 10px 20px;
+      font-size: 12px;
       display: flex;
       justify-content: space-between;
       box-sizing: border-box;
-      z-index: 1000;
-      border-top: 2px solid #34495e;
     }
 
     .dot {
-      height: 10px;
-      width: 10px;
-      background-color: #2ecc71;
+      height: 8px;
+      width: 8px;
       border-radius: 50%;
       display: inline-block;
-      margin-right: 8px;
-      box-shadow: 0 0 8px #2ecc71;
-    }
-
-    .env-tag {
-      font-weight: bold;
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      margin-right: 5px;
     }
   </style>
 </head>
-
 <body>
 
-<h1>Issue Tracker</h1>
+  <h1>Issue Tracker</h1>
 
-<div class="card">
-  <h3>Enter Username</h3>
-  <input id="username" placeholder="Username">
-</div>
+  <div class="container">
+    <div class="card">
+      <h3>Set Identity</h3>
+      <input id="username" placeholder="Enter your username">
+    </div>
 
-<div class="card">
-  <h3>Report Issue</h3>
-  <input id="title" placeholder="Issue title">
-  <button onclick="submitIssue()">Submit Issue</button>
-</div>
+    <div class="card">
+      <h3>New Issue</h3>
+      <input id="title" placeholder="Describe the problem...">
+      <button onclick="submitIssue()">Report Issue</button>
+    </div>
 
-<div class="card">
-  <h3>Update Status</h3>
-  <input id="issueId" placeholder="Issue ID">
-  <input id="status" placeholder="pending/resolved">
-  <button onclick="updateStatus()">Update Status</button>
-</div>
+    <div class="card">
+      <h3>Quick Update</h3>
+      <input id="issueId" placeholder="Issue ID">
+      <input id="status" placeholder="New status (pending/resolved)">
+      <button onclick="updateStatus()" style="background: var(--dark);">Change Status</button>
+    </div>
 
-<div class="card">
-  <h3>Your Issues</h3>
-  <button onclick="loadUserIssues()">Load Issues</button>
-  <div id="issueList"></div>
-</div>
-
-<div class="status-bar">
-  <div>
-    <span id="status-dot" class="dot"></span>
-    SYSTEM STATUS: <span id="env-mode" class="env-tag">Checking...</span>
+    <div class="card" style="border-left-color: var(--success);">
+      <h3>Track Issues</h3>
+      <button onclick="loadUserIssues()">Load My Tickets</button>
+      <div id="issueList"></div>
+    </div>
   </div>
-  <div>LAST PING: <span id="last-ping">--:--:--</span></div>
-</div>
 
-<script>
-// Use window.location.origin so it works locally AND on Render automatically
-const API = window.location.origin;
+  <div id="toast">Message goes here</div>
 
-// 1. Create Issue
-async function submitIssue() {
-  const title = document.getElementById("title").value;
-  const username = document.getElementById("username").value;
+  <div class="status-bar">
+    <div><span id="status-dot" class="dot"></span> <span id="env-mode">Initializing...</span></div>
+    <div>LAST SYNC: <span id="last-ping">--:--:--</span></div>
+  </div>
 
-  if(!title || !username) return alert("Please fill in all fields");
+  <script>
+    const API = window.location.origin;
 
-  try {
-    const res = await fetch(API + "/issue", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ title, username })
-    });
-    const data = await res.json();
-    alert("Issue Created ID: " + data.id);
-  } catch (err) {
-    console.error(err);
-    alert("Failed to create issue. Check console.");
-  }
-}
+    function showToast(msg) {
+      const x = document.getElementById("toast");
+      x.innerText = msg;
+      x.className = "show";
+      setTimeout(() => { x.className = x.className.replace("show", ""); }, 3000);
+    }
 
-// 2. Update Status
-async function updateStatus() {
-  const id = document.getElementById("issueId").value;
-  const status = document.getElementById("status").value;
+    async function submitIssue() {
+      const title = document.getElementById("title").value;
+      const username = document.getElementById("username").value;
+      if(!title || !username) return showToast("⚠️ Missing title or username");
 
-  try {
-    const res = await fetch(API + `/issue/${id}/status`, {
-      method: "PUT",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ status })
-    });
-    const data = await res.json();
-    alert(data.message || data.error);
-  } catch (err) {
-    alert("Update failed.");
-  }
-}
+      try {
+        const res = await fetch(API + "/issue", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ title, username })
+        });
+        const data = await res.json();
+        showToast("✅ Created! ID: " + data.id);
+        document.getElementById("title").value = "";
+      } catch (err) { showToast("❌ Error connecting to server"); }
+    }
 
-// 3. Load Issues
-async function loadUserIssues() {
-  const username = document.getElementById("username").value;
-  if(!username) return alert("Enter a username first");
+    async function updateStatus() {
+      const id = document.getElementById("issueId").value;
+      const status = document.getElementById("status").value.toLowerCase();
+      if(!id || !status) return showToast("⚠️ ID and Status required");
 
-  try {
-    const res = await fetch(API + `/user/${username}/issues`);
-    const data = await res.json();
+      try {
+        const res = await fetch(API + `/issue/${id}/status`, {
+          method: "PUT",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        showToast(data.message || data.error);
+      } catch (err) { showToast("❌ Update failed"); }
+    }
 
-    let html = "";
-    if(data.length === 0) html = "<p>No issues found for this user.</p>";
-    data.forEach(i => {
-      html += `<p style="font-size:14px; border-bottom:1px solid #eee; padding:5px 0;">
-                <strong>ID:</strong> ${i.id} | <strong>Title:</strong> ${i.title} | 
-                <span style="color:${i.status === 'resolved' ? 'green' : 'orange'}">${i.status.toUpperCase()}</span>
-               </p>`;
-    });
+    async function loadUserIssues() {
+      const username = document.getElementById("username").value;
+      if(!username) return showToast("⚠️ Enter a username first");
 
-    document.getElementById("issueList").innerHTML = html;
-    updatePulse(); // Update timestamp when data is loaded
-  } catch (err) {
-    alert("Could not load issues.");
-  }
-}
+      try {
+        const res = await fetch(API + `/user/${username}/issues`);
+        const data = await res.json();
+        
+        let html = "";
+        data.forEach(i => {
+          const statusClass = i.status === 'resolved' ? 'status-resolved' : 'status-pending';
+          html += `
+            <div class="issue-ticket">
+              <div>
+                <strong>#${i.id}</strong><br>
+                <small>${i.title}</small>
+              </div>
+              <span class="status-pill ${statusClass}">${i.status}</span>
+            </div>`;
+        });
+        document.getElementById("issueList").innerHTML = html || "<p>No issues found.</p>";
+      } catch (err) { showToast("❌ Could not load issues"); }
+    }
 
-// 4. Visual Pulse Logic
-function updatePulse() {
-  const envDisplay = document.getElementById("env-mode");
-  const pingDisplay = document.getElementById("last-ping");
-  const dot = document.getElementById("status-dot");
-  
-  const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-  
-  envDisplay.innerText = isLocal ? "Local Development" : "Production (Render)";
-  envDisplay.style.color = isLocal ? "#f1c40f" : "#2ecc71";
-  dot.style.backgroundColor = isLocal ? "#f1c40f" : "#2ecc71";
-  dot.style.boxShadow = isLocal ? "0 0 8px #f1c40f" : "0 0 8px #2ecc71";
+    function updatePulse() {
+      const envDisplay = document.getElementById("env-mode");
+      const dot = document.getElementById("status-dot");
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      
+      envDisplay.innerText = isLocal ? "DEV MODE" : "PRODUCTION";
+      dot.style.backgroundColor = isLocal ? "#f1c40f" : "#2ecc71";
+      document.getElementById("last-ping").innerText = new Date().toLocaleTimeString();
+    }
 
-  const now = new Date();
-  pingDisplay.innerText = now.toLocaleTimeString();
-}
-
-// Initial run
-updatePulse();
-// Auto-ping every 30 seconds to show the app is "alive"
-setInterval(updatePulse, 30000);
-
-</script>
-
+    updatePulse();
+    setInterval(updatePulse, 30000);
+  </script>
 </body>
 </html>
