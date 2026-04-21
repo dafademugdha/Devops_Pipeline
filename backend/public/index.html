@@ -1,191 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevOps Issue Tracker</title>
-  <style>
-    :root {
-      --primary: #3498db; --success: #2ecc71; --warning: #f1c40f; --dark: #2c3e50; --light: #f4f6f9; --white: #ffffff;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Issue Tracker | v1.0.5</title>
+    <style>
+        /* CSS VARIABLES FOR THEMING */
+        :root {
+            --bg-color: #1a202c;
+            --card-bg: #2d3748;
+            --text-color: #edf2f7;
+            --accent-color: #4299e1;
+            --border-color: #4a5568;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+        }
 
-    body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--light); margin: 0; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; margin-bottom: 80px; }
-    .container { width: 100%; max-width: 500px; }
+        /* LIGHT MODE OVERRIDES */
+        body.light-mode {
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --accent-color: #3182ce;
+            --border-color: #e2e8f0;
+        }
 
-    .card { background: var(--white); padding: 25px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.05); }
-    h1 { color: var(--dark); font-weight: 800; letter-spacing: -1px; margin-bottom: 30px; }
-    h3 { margin-top: 0; color: var(--dark); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.6; margin-bottom: 15px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
 
-    input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #edf2f7; border-radius: 10px; box-sizing: border-box; outline: none; transition: all 0.2s; font-size: 1rem; }
-    input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1); }
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 400px;
+            border: 1px solid var(--border-color);
+        }
 
-    /* Segmented Control */
-    .status-toggle { display: flex; background: #edf2f7; padding: 4px; border-radius: 12px; margin: 10px 0; }
-    .status-toggle label { flex: 1; text-align: center; padding: 10px; cursor: pointer; border-radius: 8px; font-size: 0.9rem; font-weight: 600; color: #718096; transition: all 0.2s; }
-    .status-toggle input { display: none; }
-    .status-toggle input:checked + label { background: var(--white); color: var(--dark); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
 
-    button { width: 100%; padding: 14px; background: var(--dark); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: all 0.2s; margin-top: 5px; }
-    button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h2 { margin: 0; color: var(--accent-color); font-size: 1.5rem; }
 
-    /* Tickets */
-    .issue-ticket { background: var(--white); padding: 16px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; cursor: pointer; }
-    .issue-ticket:hover { transform: scale(1.01); border-color: var(--primary); }
-    
-    .status-pill { padding: 6px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-    .status-pending { background: #fefcbf; color: #b7791f; }
-    .status-resolved { background: #c6f6d5; color: #2f855a; }
+        #theme-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
 
-    #toast { visibility: hidden; min-width: 280px; background-color: var(--dark); color: #fff; text-align: center; border-radius: 12px; padding: 16px; position: fixed; z-index: 1001; bottom: 100px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-    #toast.show { visibility: visible; animation: slideUp 0.4s; }
+        #theme-btn:hover { background: rgba(66, 153, 225, 0.1); }
 
-    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .issue-list {
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border-top: 1px solid var(--border-color);
+        }
 
-    .status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--dark); color: white; padding: 12px 24px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
-    .dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-  </style>
+        .status-bar {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dotted var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #718096;
+        }
+
+        .dot {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .badge {
+            background: #4a5568;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-size: 9px;
+        }
+    </style>
 </head>
 <body>
 
-  <h1>
-    Issue Tracker
-    <span style="background: #e74c3c; color: white; font-size: 10px; padding: 2px 8px; border-radius: 10px; vertical-align: middle; margin-left: 10px;">
-    LIVE DEMO
-    </span>
-  </h1>
-
-  <div class="container">
-    <div class="card">
-      <h3>Identity</h3>
-      <input id="username" placeholder="Enter your username" onchange="loadUserIssues()">
+<div class="container">
+    <div class="header">
+        <h2>Issue Tracker</h2>
+        <button id="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
     </div>
 
-    <div class="card">
-      <h3>Report Issue</h3>
-      <input id="title" placeholder="Describe the issue...">
-      <button onclick="submitIssue()" style="background: var(--primary);">Submit Ticket</button>
+    <div class="issue-list" id="issueList">
+        <div style="text-align: center; padding: 40px; color: var(--success); font-weight: bold;">
+            ✓ System Healthy. No active tickets.
+        </div>
     </div>
 
-    <div class="card">
-      <h3>Update Status</h3>
-      <input id="issueId" placeholder="Click a ticket or enter ID">
-      
-      <div class="status-toggle">
-        <input type="radio" id="pending" name="status" value="pending" checked>
-        <label for="pending">Pending</label>
-        <input type="radio" id="resolved" name="status" value="resolved">
-        <label for="resolved">Resolved</label>
-      </div>
-
-      <button onclick="updateStatus()">Update</button>
+    <div class="status-bar">
+        <div>
+            <span id="status-dot" class="dot"></span> 
+            <span id="env-mode">INITIALIZING...</span>
+            <span class="badge">BUILD: v1.0.5-LIVE</span>
+        </div>
+        <div id="last-ping">--:--:--</div>
     </div>
+</div>
 
-    <div class="card">
-      <h3>My Issues</h3>
-      <input type="text" id="searchInput" onkeyup="filterIssues()" placeholder="🔍 Filter tickets...">
-      <div id="issueList" style="margin-top: 15px;">
-        <div style="text-align: center; color: #a0aec0; padding: 20px;">No issues found.</div>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast"></div>
-
-  <div class="status-bar">
-    <div><span id="status-dot" class="dot"></span> <span id="env-mode">...</span></div>
-    <div id="last-ping">--:--:--</div>
-  </div>
-
-  <script>
-    const API = window.location.origin;
-
-    function showToast(msg) {
-      const x = document.getElementById("toast");
-      x.innerText = msg;
-      x.className = "show";
-      setTimeout(() => { x.className = ""; }, 3000);
+<script>
+    // THEME TOGGLE LOGIC
+    function toggleTheme() {
+        document.body.classList.toggle('light-mode');
+        const isLight = document.body.classList.contains('light-mode');
+        localStorage.setItem('preferred-theme', isLight ? 'light' : 'dark');
     }
 
-    async function submitIssue() {
-      const title = document.getElementById("title").value;
-      const username = document.getElementById("username").value;
-      if(!title || !username) return showToast("⚠️ Title and Username required");
-
-      try {
-        await fetch(API + "/issue", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ title, username })
-        });
-        showToast("🚀 Issue Logged!");
-        document.getElementById("title").value = "";
-        loadUserIssues();
-      } catch (err) { showToast("❌ Server Error"); }
-    }
-
-    async function updateStatus() {
-      const id = document.getElementById("issueId").value;
-      const status = document.querySelector('input[name="status"]:checked').value;
-      if(!id) return showToast("⚠️ ID required");
-
-      try {
-        await fetch(API + `/issue/${id}/status`, {
-          method: "PUT",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ status })
-        });
-        showToast("✅ Updated Successfully");
-        loadUserIssues();
-      } catch (err) { showToast("❌ Update Failed"); }
-    }
-
-    async function loadUserIssues() {
-      const username = document.getElementById("username").value;
-      if(!username) return;
-
-      try {
-        const res = await fetch(API + `/user/${username}/issues`);
-        const data = await res.json();
-        
-        const list = document.getElementById("issueList");
-        if(data.length === 0) {
-          list.innerHTML = `<div style="text-align: center; padding: 20px; color: #a0aec0;">No issues found.</div>`;
-          return;
-        }
-
-        list.innerHTML = data.map(i => `
-          <div class="issue-ticket" data-title="${i.title.toLowerCase()}" onclick="selectIssue('${i.id}', '${i.status}')">
-            <div>
-              <span style="font-size: 0.7rem; color: #a0aec0;">#${i.id}</span><br>
-              <span style="font-weight: 600;">${i.title}</span>
-            </div>
-            <span class="status-pill status-${i.status}">${i.status}</span>
-          </div>`).join('');
-      } catch (err) { showToast("❌ Load Failed"); }
-    }
-
-    function selectIssue(id, status) {
-      document.getElementById('issueId').value = id;
-      document.getElementById(status).checked = true;
-    }
-
-    function filterIssues() {
-      const query = document.getElementById("searchInput").value.toLowerCase();
-      const tickets = document.getElementsByClassName("issue-ticket");
-      for (let ticket of tickets) {
-        ticket.style.display = ticket.getAttribute("data-title").includes(query) ? "flex" : "none";
-      }
-    }
-
+    // VISUAL PULSE LOGIC
     function updatePulse() {
-      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-      document.getElementById("env-mode").innerText = isLocal ? "DEVELOPMENT" : "PRODUCTION";
-      document.getElementById("status-dot").style.background = isLocal ? "#f1c40f" : "#2ecc71";
-      document.getElementById("last-ping").innerText = new Date().toLocaleTimeString();
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const envMode = document.getElementById("env-mode");
+        const dot = document.getElementById("status-dot");
+        
+        envMode.innerText = isLocal ? "DEVELOPMENT" : "PRODUCTION";
+        dot.style.background = isLocal ? "var(--warning)" : "var(--success)";
+        document.getElementById("last-ping").innerText = new Date().toLocaleTimeString();
     }
 
-    updatePulse();
-    setInterval(updatePulse, 30000);
-  </script>
+    // INITIALIZATION
+    window.onload = function() {
+        // Apply saved theme
+        if (localStorage.getItem('preferred-theme') === 'light') {
+            document.body.classList.add('light-mode');
+        }
+        
+        updatePulse();
+        setInterval(updatePulse, 1000);
+    };
+</script>
+
 </body>
 </html>
